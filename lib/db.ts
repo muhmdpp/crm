@@ -1,7 +1,9 @@
 import Database from "better-sqlite3";
 import path from "path";
 
-const DB_PATH = path.resolve(process.cwd(), "deck.db");
+// In production (Railway), set DB_PATH=/app/data/deck.db pointing to the mounted volume.
+// Locally it defaults to the project root.
+const DB_PATH = process.env.DB_PATH ?? path.resolve(process.cwd(), "deck.db");
 
 declare global {
   // eslint-disable-next-line no-var
