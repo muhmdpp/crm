@@ -9,6 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@react-pdf/renderer": "^4.5.1",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.11.1",
+    "iron-session": "^8.0.4",
+    "nanoid": "^5.1.15",
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4"
