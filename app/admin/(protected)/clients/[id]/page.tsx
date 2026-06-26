@@ -25,13 +25,13 @@ export default async function ClientDetailPage({ params }: Props) {
   if (!client) notFound();
 
   // Strip pin_hash before passing to client component
-  const { pin_hash, ...safeClient } = client;
+  const { pin_hash, ...safeClient } = client as any;
 
   return (
     <ClientDetailClient
-      client={safeClient}
-      workEntries={workEntries}
-      invoices={invoices}
+      client={safeClient as any}
+      workEntries={workEntries as any}
+      invoices={invoices as any}
     />
   );
 }

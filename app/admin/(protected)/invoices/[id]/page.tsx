@@ -31,5 +31,5 @@ export default async function InvoiceDetailPage({ params }: Props) {
 
   if (!invoice) notFound();
 
-  return <InvoiceDetailClient invoice={invoice} entries={entries} />;
+  return <InvoiceDetailClient invoice={invoice as any} entries={entries as any} />;
 }
