@@ -28,10 +28,8 @@ export async function GET(req: NextRequest, { params }: Params) {
     SELECT * FROM work_entries WHERE invoice_id = ${invoiceId} ORDER BY date ASC
   `;
 
-  const agencyName = process.env.AGENCY_NAME ?? "Deck Agency";
-
   const stream = await renderToStream(
-    React.createElement(InvoiceDocument, { invoice: invoice as any, entries: entries as any, agencyName }) as any
+    React.createElement(InvoiceDocument, { invoice: invoice as any, entries: entries as any }) as any
   );
 
   return new NextResponse(stream as any, {
