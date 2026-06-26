@@ -14,5 +14,5 @@ export default async function EditClientPage({ params }: Props) {
     SELECT id, name, email, phone, address, portal_token FROM clients WHERE id = ${id}
   `)[0];
   if (!client) notFound();
-  return <EditClient client={client} />;
+  return <EditClient client={client as any} />;
 }
