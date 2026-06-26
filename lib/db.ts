@@ -15,7 +15,9 @@ function getDB(): postgres.Sql {
   if (!global.__db) {
     global.__db = postgres(DATABASE_URL as string, {
       ssl: "require",
-      max: 10,
+      max: 1, // Limit connections per serverless function to prevent pool exhaustion
+      idle_timeout: 15, // Close idle connections quickly
+      max_lifetime: 60 * 5, // Force new connection every 5 minutes to avoid dead socket errors on warm starts
       onnotice: () => {}, // Suppress "relation already exists" notices
     });
   }
