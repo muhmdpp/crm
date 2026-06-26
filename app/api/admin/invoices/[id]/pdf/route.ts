@@ -29,7 +29,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const agencyName = process.env.AGENCY_NAME ?? "Deck Agency";
 
   const stream = await renderToStream(
-    React.createElement(InvoiceDocument, { invoice, entries, agencyName }) as any
+    React.createElement(InvoiceDocument, { invoice: invoice as any, entries: entries as any, agencyName }) as any
   );
 
   return new NextResponse(stream as any, {

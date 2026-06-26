@@ -13,7 +13,7 @@ declare global {
 
 function getDB(): postgres.Sql {
   if (!global.__db) {
-    global.__db = postgres(DATABASE_URL, {
+    global.__db = postgres(DATABASE_URL as string, {
       ssl: "require",
       max: 10,
       onnotice: () => {}, // Suppress "relation already exists" notices
