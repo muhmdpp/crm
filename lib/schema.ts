@@ -56,8 +56,8 @@ export async function initDB() {
 // For Next.js in development, this might run multiple times.
 // We wrap it in an async IIFE to handle the promise.
 (async () => {
-  if (process.env.NODE_ENV !== 'production' && typeof window === 'undefined') {
-    // Optional: we can disable auto-running in prod if we prefer migrations
+  if (typeof window === 'undefined') {
+    // We run this in prod too for simple serverless setups without external migration runners
     await initDB();
   }
 })();
