@@ -1,7 +1,20 @@
-import db from "./db";
+import postgres from 'postgres';
+import fs from 'fs';
 
-export async function initDB() {
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl) {
+  console.error("DATABASE_URL is not set.");
+  process.exit(1);
+}
+
+const db = postgres(dbUrl, {
+  ssl: 'require',
+  max: 1
+});
+
+async function initDB() {
   try {
+    console.log("Creating tables...");
     await db`
       CREATE TABLE IF NOT EXISTS clients (
         id SERIAL PRIMARY KEY,
@@ -47,17 +60,15 @@ export async function initDB() {
     await db`CREATE INDEX IF NOT EXISTS idx_work_entries_client ON work_entries(client_id);`;
     await db`CREATE INDEX IF NOT EXISTS idx_work_entries_invoice ON work_entries(invoice_id);`;
     await db`CREATE INDEX IF NOT EXISTS idx_invoices_client ON invoices(client_id);`;
+    
+    console.log("Successfully initialized database tables!");
   } catch (err) {
-    console.error("Failed to initialize database schema:", err);
+    console.error("Failed to initialize database schema:");
+    console.error(err);
+    process.exit(1);
+  } finally {
+    await db.end();
   }
 }
 
-// Ensure the schema is initialized.
-// For Next.js in development, this might run multiple times.
-// We wrap it in an async IIFE to handle the promise.
-(async () => {
-  if (process.env.NODE_ENV !== 'production' && typeof window === 'undefined') {
-    // Optional: we can disable auto-running in prod if we prefer migrations
-    await initDB();
-  }
-})();
+initDB();

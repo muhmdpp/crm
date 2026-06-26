@@ -12,11 +12,11 @@ export async function GET(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const client = db.prepare("SELECT id FROM clients WHERE portal_token = ?").get(token) as any;
+  const client = (await db`SELECT id FROM clients WHERE portal_token = ${token}`)[0];
   if (!client) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Return safe fields only — no billing internals exposed
-  const entries = db.prepare(`
+  const entries = await db`
     SELECT 
       id, date, kind_of_work, description, price,
       work_status,
@@ -28,9 +28,9 @@ export async function GET(req: NextRequest, { params }: Params) {
       billing_status,
       created_at
     FROM work_entries 
-    WHERE client_id = ?
+    WHERE client_id = ${client.id}
     ORDER BY date DESC, created_at DESC
-  `).all(client.id);
+  `;
 
   return NextResponse.json(entries, {
     headers: { "Cache-Control": "no-store" },

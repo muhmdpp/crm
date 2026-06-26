@@ -12,15 +12,15 @@ export async function GET(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const client = db.prepare("SELECT id FROM clients WHERE portal_token = ?").get(token) as any;
+  const client = (await db`SELECT id FROM clients WHERE portal_token = ${token}`)[0];
   if (!client) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const invoices = db.prepare(`
+  const invoices = await db`
     SELECT id, invoice_number, issue_date, total_amount, status, paid_at, created_at
     FROM invoices 
-    WHERE client_id = ?
+    WHERE client_id = ${client.id}
     ORDER BY created_at DESC
-  `).all(client.id);
+  `;
 
   return NextResponse.json(invoices, {
     headers: { "Cache-Control": "no-store" },

@@ -7,12 +7,12 @@ import { generateInvoiceNumber } from "@/lib/utils";
 export async function GET() {
   try { await requireAdmin(); } catch { return unauthorizedResponse(); }
 
-  const invoices = db.prepare(`
+  const invoices = await db`
     SELECT i.*, c.name as client_name
     FROM invoices i
     JOIN clients c ON c.id = i.client_id
     ORDER BY i.created_at DESC
-  `).all();
+  `;
 
   return NextResponse.json(invoices);
 }
@@ -28,11 +28,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify all entries belong to this client and are unbilled
-    const placeholders = entry_ids.map(() => "?").join(",");
-    const entries = db.prepare(`
+    const entries = await db`
       SELECT * FROM work_entries 
-      WHERE id IN (${placeholders}) AND client_id = ? AND billing_status = 'unbilled'
-    `).all(...entry_ids, client_id) as any[];
+      WHERE id IN ${db(entry_ids)} AND client_id = ${client_id} AND billing_status = 'unbilled'
+    `;
 
     if (entries.length !== entry_ids.length) {
       return NextResponse.json(
@@ -44,30 +43,31 @@ export async function POST(req: NextRequest) {
     const totalAmount = entries.reduce((sum: number, e: any) => sum + e.price, 0);
 
     // Generate next invoice number
-    const maxRow = db.prepare("SELECT MAX(CAST(SUBSTR(invoice_number, 5) AS INTEGER)) as max_num FROM invoices").get() as any;
+    const maxRowResult = await db`SELECT MAX(CAST(SUBSTRING(invoice_number FROM 5) AS INTEGER)) as max_num FROM invoices`;
+    const maxRow = maxRowResult[0];
     const invoiceNumber = generateInvoiceNumber(maxRow?.max_num ?? 0);
     const issueDate = new Date().toISOString().split("T")[0];
 
     // Insert invoice + update entries atomically
-    const createInvoice = db.transaction(() => {
-      const result = db.prepare(`
+    const invoiceId = await db.begin(async (sql) => {
+      const result = await sql`
         INSERT INTO invoices (client_id, invoice_number, issue_date, total_amount, status)
-        VALUES (?, ?, ?, ?, 'draft')
-      `).run(client_id, invoiceNumber, issueDate, totalAmount);
+        VALUES (${client_id}, ${invoiceNumber}, ${issueDate}, ${totalAmount}, 'draft')
+        RETURNING id
+      `;
 
-      const invoiceId = result.lastInsertRowid;
+      const id = result[0].id;
 
-      db.prepare(`
+      await sql`
         UPDATE work_entries 
-        SET billing_status = 'invoiced', invoice_id = ?
-        WHERE id IN (${placeholders})
-      `).run(invoiceId, ...entry_ids);
+        SET billing_status = 'invoiced', invoice_id = ${id}
+        WHERE id IN ${db(entry_ids)}
+      `;
 
-      return invoiceId;
+      return id;
     });
 
-    const invoiceId = createInvoice();
-    const invoice = db.prepare("SELECT * FROM invoices WHERE id = ?").get(invoiceId);
+    const invoice = (await db`SELECT * FROM invoices WHERE id = ${invoiceId}`)[0];
     return NextResponse.json(invoice, { status: 201 });
   } catch (err) {
     console.error(err);

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Token and PIN required" }, { status: 400 });
     }
 
-    const client = db.prepare("SELECT * FROM clients WHERE portal_token = ?").get(token) as any;
+    const client = (await db`SELECT * FROM clients WHERE portal_token = ${token}`)[0];
     if (!client) {
       return NextResponse.json({ error: "Invalid token" }, { status: 404 });
     }

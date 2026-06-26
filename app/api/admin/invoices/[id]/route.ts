@@ -9,18 +9,18 @@ export async function GET(req: NextRequest, { params }: Params) {
   try { await requireAdmin(); } catch { return unauthorizedResponse(); }
 
   const { id } = await params;
-  const invoice = db.prepare(`
+  const invoice = (await db`
     SELECT i.*, c.name as client_name, c.email as client_email, 
            c.phone as client_phone, c.address as client_address
     FROM invoices i JOIN clients c ON c.id = i.client_id
-    WHERE i.id = ?
-  `).get(id) as any;
+    WHERE i.id = ${id}
+  `)[0];
 
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const entries = db.prepare(
-    "SELECT * FROM work_entries WHERE invoice_id = ? ORDER BY date ASC"
-  ).all(id);
+  const entries = await db`
+    SELECT * FROM work_entries WHERE invoice_id = ${id} ORDER BY date ASC
+  `;
 
   return NextResponse.json({ invoice, entries });
 }
@@ -35,24 +35,19 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  const invoice = db.prepare("SELECT * FROM invoices WHERE id = ?").get(id) as any;
+  const invoice = (await db`SELECT * FROM invoices WHERE id = ${id}`)[0];
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (status === "paid") {
     // Cascade: mark all linked entries as paid
-    const markPaid = db.transaction(() => {
-      db.prepare(
-        "UPDATE invoices SET status='paid', paid_at=datetime('now') WHERE id=?"
-      ).run(id);
-      db.prepare(
-        "UPDATE work_entries SET billing_status='paid' WHERE invoice_id=?"
-      ).run(id);
+    await db.begin(async (sql) => {
+      await sql`UPDATE invoices SET status='paid', paid_at=NOW() WHERE id=${id}`;
+      await sql`UPDATE work_entries SET billing_status='paid' WHERE invoice_id=${id}`;
     });
-    markPaid();
   } else {
-    db.prepare("UPDATE invoices SET status=? WHERE id=?").run(status, id);
+    await db`UPDATE invoices SET status=${status} WHERE id=${id}`;
   }
 
-  const updated = db.prepare("SELECT * FROM invoices WHERE id = ?").get(id);
+  const updated = (await db`SELECT * FROM invoices WHERE id = ${id}`)[0];
   return NextResponse.json(updated);
 }

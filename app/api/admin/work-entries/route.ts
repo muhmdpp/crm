@@ -13,13 +13,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const result = db.prepare(`
+    const result = await db`
       INSERT INTO work_entries (client_id, date, kind_of_work, description, price, work_status)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(client_id, date, kind_of_work, description ?? null, price, work_status ?? "in_progress");
+      VALUES (${client_id}, ${date}, ${kind_of_work}, ${description ?? null}, ${price}, ${work_status ?? "in_progress"})
+      RETURNING *
+    `;
 
-    const entry = db.prepare("SELECT * FROM work_entries WHERE id = ?").get(result.lastInsertRowid);
-    return NextResponse.json(entry, { status: 201 });
+    return NextResponse.json(result[0], { status: 201 });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Failed to create entry" }, { status: 500 });

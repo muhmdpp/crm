@@ -30,31 +30,35 @@ function StatCard({
 }
 
 export default async function AdminDashboard() {
-  const outstanding = db.prepare(
-    "SELECT COALESCE(SUM(price), 0) as total FROM work_entries WHERE billing_status = 'unbilled'"
-  ).get() as any;
+  const [
+    outstandingResult,
+    unbilledCountResult,
+    paidThisMonthResult,
+    recentInvoices,
+    recentEntries
+  ] = await Promise.all([
+    db`SELECT COALESCE(SUM(price), 0) as total FROM work_entries WHERE billing_status = 'unbilled'`,
+    db`SELECT COUNT(*) as count FROM work_entries WHERE billing_status = 'unbilled'`,
+    db`
+      SELECT COALESCE(SUM(total_amount), 0) as total 
+      FROM invoices 
+      WHERE status = 'paid' AND TO_CHAR(paid_at::timestamp, 'YYYY-MM') = TO_CHAR(NOW(), 'YYYY-MM')
+    `,
+    db`
+      SELECT i.*, c.name as client_name
+      FROM invoices i JOIN clients c ON c.id = i.client_id
+      ORDER BY i.created_at DESC LIMIT 8
+    `,
+    db`
+      SELECT we.*, c.name as client_name
+      FROM work_entries we JOIN clients c ON c.id = we.client_id
+      ORDER BY we.created_at DESC LIMIT 6
+    `
+  ]);
 
-  const unbilledCount = db.prepare(
-    "SELECT COUNT(*) as count FROM work_entries WHERE billing_status = 'unbilled'"
-  ).get() as any;
-
-  const paidThisMonth = db.prepare(`
-    SELECT COALESCE(SUM(total_amount), 0) as total 
-    FROM invoices 
-    WHERE status = 'paid' AND strftime('%Y-%m', paid_at) = strftime('%Y-%m', 'now')
-  `).get() as any;
-
-  const recentInvoices = db.prepare(`
-    SELECT i.*, c.name as client_name
-    FROM invoices i JOIN clients c ON c.id = i.client_id
-    ORDER BY i.created_at DESC LIMIT 8
-  `).all() as any[];
-
-  const recentEntries = db.prepare(`
-    SELECT we.*, c.name as client_name
-    FROM work_entries we JOIN clients c ON c.id = we.client_id
-    ORDER BY we.created_at DESC LIMIT 6
-  `).all() as any[];
+  const outstanding = outstandingResult[0];
+  const unbilledCount = unbilledCountResult[0];
+  const paidThisMonth = paidThisMonthResult[0];
 
   return (
     <div className="space-y-8">

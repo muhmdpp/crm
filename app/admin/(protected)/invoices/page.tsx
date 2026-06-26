@@ -9,17 +9,17 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Invoices" };
 
 export default async function InvoicesPage() {
-  const invoices = db.prepare(`
+  const invoices = await db`
     SELECT i.*, c.name as client_name
     FROM invoices i
     JOIN clients c ON c.id = i.client_id
     ORDER BY i.created_at DESC
-  `).all() as any[];
+  `;
 
   const totalByStatus = {
-    draft: invoices.filter((i) => i.status === "draft").reduce((s, i) => s + i.total_amount, 0),
-    sent: invoices.filter((i) => i.status === "sent").reduce((s, i) => s + i.total_amount, 0),
-    paid: invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.total_amount, 0),
+    draft: invoices.filter((i) => i.status === "draft").reduce((s, i) => s + Number(i.total_amount), 0),
+    sent: invoices.filter((i) => i.status === "sent").reduce((s, i) => s + Number(i.total_amount), 0),
+    paid: invoices.filter((i) => i.status === "paid").reduce((s, i) => s + Number(i.total_amount), 0),
   };
 
   return (
@@ -79,7 +79,7 @@ export default async function InvoicesPage() {
                   </td>
                   <td className="px-5 py-4 text-sm text-gray-600">{inv.client_name}</td>
                   <td className="px-5 py-4 text-sm text-gray-400 hidden sm:table-cell">{formatDate(inv.issue_date)}</td>
-                  <td className="px-5 py-4 text-right text-sm font-semibold text-gray-900">{formatCurrency(inv.total_amount)}</td>
+                  <td className="px-5 py-4 text-right text-sm font-semibold text-gray-900">{formatCurrency(Number(inv.total_amount))}</td>
                   <td className="px-5 py-4 text-center"><Badge status={inv.status} /></td>
                 </tr>
               ))}

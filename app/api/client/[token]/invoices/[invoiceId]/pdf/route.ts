@@ -15,21 +15,21 @@ export async function GET(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const client = db.prepare("SELECT id FROM clients WHERE portal_token = ?").get(token) as any;
+  const client = (await db`SELECT id FROM clients WHERE portal_token = ${token}`)[0];
   if (!client) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const invoice = db.prepare(`
+  const invoice = (await db`
     SELECT i.*, c.name as client_name, c.email as client_email,
            c.phone as client_phone, c.address as client_address
     FROM invoices i JOIN clients c ON c.id = i.client_id
-    WHERE i.id = ? AND i.client_id = ?
-  `).get(invoiceId, client.id) as any;
+    WHERE i.id = ${invoiceId} AND i.client_id = ${client.id}
+  `)[0];
 
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const entries = db.prepare(
-    "SELECT * FROM work_entries WHERE invoice_id = ? ORDER BY date ASC"
-  ).all(invoiceId) as any[];
+  const entries = await db`
+    SELECT * FROM work_entries WHERE invoice_id = ${invoiceId} ORDER BY date ASC
+  `;
 
   const agencyName = process.env.AGENCY_NAME ?? "Deck Agency";
   const stream = await renderToStream(

@@ -10,16 +10,16 @@ export async function GET(req: NextRequest, { params }: Params) {
   try { await requireAdmin(); } catch { return unauthorizedResponse(); }
 
   const { id } = await params;
-  const client = db.prepare("SELECT * FROM clients WHERE id = ?").get(id);
+  const client = (await db`SELECT * FROM clients WHERE id = ${id}`)[0];
   if (!client) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const workEntries = db.prepare(
-    "SELECT * FROM work_entries WHERE client_id = ? ORDER BY date DESC, created_at DESC"
-  ).all(id);
+  const workEntries = await db`
+    SELECT * FROM work_entries WHERE client_id = ${id} ORDER BY date DESC, created_at DESC
+  `;
 
-  const invoices = db.prepare(
-    "SELECT * FROM invoices WHERE client_id = ? ORDER BY created_at DESC"
-  ).all(id);
+  const invoices = await db`
+    SELECT * FROM invoices WHERE client_id = ${id} ORDER BY created_at DESC
+  `;
 
   return NextResponse.json({ client, workEntries, invoices });
 }
@@ -50,7 +50,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
           { status: 400 }
         );
       }
-      const existing = db.prepare("SELECT id FROM clients WHERE portal_token = ? AND id != ?").get(slug, id);
+      const existing = (await db`SELECT id FROM clients WHERE portal_token = ${slug} AND id != ${id}`)[0];
       if (existing) {
         return NextResponse.json({ error: "This slug is already taken" }, { status: 409 });
       }
@@ -60,24 +60,24 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   // Build update dynamically based on what's changing
   if (pinHash && newSlug) {
-    db.prepare(
-      "UPDATE clients SET name=?, email=?, phone=?, address=?, pin_hash=?, portal_token=? WHERE id=?"
-    ).run(name, email ?? null, phone ?? null, address ?? null, pinHash, newSlug, id);
+    await db`
+      UPDATE clients SET name=${name}, email=${email ?? null}, phone=${phone ?? null}, address=${address ?? null}, pin_hash=${pinHash}, portal_token=${newSlug} WHERE id=${id}
+    `;
   } else if (pinHash) {
-    db.prepare(
-      "UPDATE clients SET name=?, email=?, phone=?, address=?, pin_hash=? WHERE id=?"
-    ).run(name, email ?? null, phone ?? null, address ?? null, pinHash, id);
+    await db`
+      UPDATE clients SET name=${name}, email=${email ?? null}, phone=${phone ?? null}, address=${address ?? null}, pin_hash=${pinHash} WHERE id=${id}
+    `;
   } else if (newSlug) {
-    db.prepare(
-      "UPDATE clients SET name=?, email=?, phone=?, address=?, portal_token=? WHERE id=?"
-    ).run(name, email ?? null, phone ?? null, address ?? null, newSlug, id);
+    await db`
+      UPDATE clients SET name=${name}, email=${email ?? null}, phone=${phone ?? null}, address=${address ?? null}, portal_token=${newSlug} WHERE id=${id}
+    `;
   } else {
-    db.prepare(
-      "UPDATE clients SET name=?, email=?, phone=?, address=? WHERE id=?"
-    ).run(name, email ?? null, phone ?? null, address ?? null, id);
+    await db`
+      UPDATE clients SET name=${name}, email=${email ?? null}, phone=${phone ?? null}, address=${address ?? null} WHERE id=${id}
+    `;
   }
 
-  const client = db.prepare("SELECT * FROM clients WHERE id = ?").get(id);
+  const client = (await db`SELECT * FROM clients WHERE id = ${id}`)[0];
   return NextResponse.json(client);
 }
 
@@ -85,6 +85,6 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   try { await requireAdmin(); } catch { return unauthorizedResponse(); }
 
   const { id } = await params;
-  db.prepare("DELETE FROM clients WHERE id = ?").run(id);
+  await db`DELETE FROM clients WHERE id = ${id}`;
   return NextResponse.json({ success: true });
 }

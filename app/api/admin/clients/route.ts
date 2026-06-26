@@ -12,7 +12,7 @@ export async function GET() {
     return unauthorizedResponse();
   }
 
-  const clients = db.prepare(`
+  const clients = await db`
     SELECT 
       c.id,
       c.name,
@@ -28,7 +28,7 @@ export async function GET() {
     LEFT JOIN work_entries we ON we.client_id = c.id
     GROUP BY c.id
     ORDER BY c.created_at DESC
-  `).all();
+  `;
 
   return NextResponse.json(clients);
 }
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-      const existing = db.prepare("SELECT id FROM clients WHERE portal_token = ?").get(slug);
+      const existing = (await db`SELECT id FROM clients WHERE portal_token = ${slug}`)[0];
       if (existing) {
         return NextResponse.json({ error: "This slug is already taken" }, { status: 409 });
       }
@@ -70,12 +70,13 @@ export async function POST(req: NextRequest) {
 
     const pinHash = await bcrypt.hash(pin, 10);
 
-    const result = db.prepare(`
+    const result = await db`
       INSERT INTO clients (name, email, phone, address, portal_token, pin_hash)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(name, email ?? null, phone ?? null, address ?? null, portalToken, pinHash);
+      VALUES (${name}, ${email ?? null}, ${phone ?? null}, ${address ?? null}, ${portalToken}, ${pinHash})
+      RETURNING *
+    `;
 
-    const client = db.prepare("SELECT * FROM clients WHERE id = ?").get(result.lastInsertRowid) as any;
+    const client = result[0];
     return NextResponse.json({ ...client, plain_pin: pin }, { status: 201 });
   } catch (err) {
     console.error(err);

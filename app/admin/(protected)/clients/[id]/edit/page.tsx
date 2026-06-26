@@ -10,9 +10,9 @@ export const metadata: Metadata = { title: "Edit Client" };
 
 export default async function EditClientPage({ params }: Props) {
   const { id } = await params;
-  const client = db.prepare(
-    "SELECT id, name, email, phone, address, portal_token FROM clients WHERE id = ?"
-  ).get(id) as any;
+  const client = (await db`
+    SELECT id, name, email, phone, address, portal_token FROM clients WHERE id = ${id}
+  `)[0];
   if (!client) notFound();
   return <EditClient client={client} />;
 }

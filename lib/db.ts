@@ -1,20 +1,23 @@
-import Database from "better-sqlite3";
-import path from "path";
+import postgres from "postgres";
 
-// In production (Railway), set DB_PATH=/app/data/deck.db pointing to the mounted volume.
-// Locally it defaults to the project root.
-const DB_PATH = process.env.DB_PATH ?? path.resolve(process.cwd(), "deck.db");
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  throw new Error("DATABASE_URL is not set in environment variables.");
+}
 
 declare global {
   // eslint-disable-next-line no-var
-  var __db: Database.Database | undefined;
+  var __db: postgres.Sql | undefined;
 }
 
-function getDB(): Database.Database {
+function getDB(): postgres.Sql {
   if (!global.__db) {
-    global.__db = new Database(DB_PATH);
-    global.__db.pragma("journal_mode = WAL");
-    global.__db.pragma("foreign_keys = ON");
+    global.__db = postgres(DATABASE_URL, {
+      ssl: "require",
+      max: 10,
+      onnotice: () => {}, // Suppress "relation already exists" notices
+    });
   }
   return global.__db;
 }

@@ -10,7 +10,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Clients" };
 
 export default async function ClientsPage() {
-  const clients = db.prepare(`
+  const clients = await db`
     SELECT 
       c.id, c.name, c.email, c.phone, c.portal_token, c.created_at,
       COALESCE(SUM(CASE WHEN we.billing_status = 'unbilled' THEN we.price ELSE 0 END), 0) as unbilled_total,
@@ -20,7 +20,7 @@ export default async function ClientsPage() {
     LEFT JOIN work_entries we ON we.client_id = c.id
     GROUP BY c.id
     ORDER BY c.created_at DESC
-  `).all() as any[];
+  `;
 
   return (
     <div className="space-y-6">
@@ -88,9 +88,9 @@ export default async function ClientsPage() {
                     {client.phone && <p className="text-xs text-gray-400">{client.phone}</p>}
                   </td>
                   <td className="px-5 py-4 text-right">
-                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(client.unbilled_total)}</p>
-                    {client.unbilled_count > 0 && (
-                      <p className="text-xs text-amber-600">{client.unbilled_count} entr{client.unbilled_count !== 1 ? "ies" : "y"}</p>
+                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(Number(client.unbilled_total))}</p>
+                    {Number(client.unbilled_count) > 0 && (
+                      <p className="text-xs text-amber-600">{client.unbilled_count} entr{Number(client.unbilled_count) !== 1 ? "ies" : "y"}</p>
                     )}
                   </td>
                   <td className="px-5 py-4 text-right hidden md:table-cell">

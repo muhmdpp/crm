@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 export default async function ClientPortalPage({ params }: Props) {
   const { token } = await params;
 
-  const client = db.prepare(
-    "SELECT id, name FROM clients WHERE portal_token = ?"
-  ).get(token) as any;
+  const client = (await db`
+    SELECT id, name FROM clients WHERE portal_token = ${token}
+  `)[0];
 
   if (!client) notFound();
 

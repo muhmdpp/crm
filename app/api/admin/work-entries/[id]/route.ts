@@ -21,17 +21,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Invalid billing_status" }, { status: 400 });
   }
 
-  const entry = db.prepare("SELECT * FROM work_entries WHERE id = ?").get(id) as any;
+  const entry = (await db`SELECT * FROM work_entries WHERE id = ${id}`)[0];
   if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const newWorkStatus = body.work_status ?? entry.work_status;
   const newBillingStatus = body.billing_status ?? entry.billing_status;
 
-  db.prepare(
-    "UPDATE work_entries SET work_status=?, billing_status=? WHERE id=?"
-  ).run(newWorkStatus, newBillingStatus, id);
+  await db`
+    UPDATE work_entries SET work_status=${newWorkStatus}, billing_status=${newBillingStatus} WHERE id=${id}
+  `;
 
-  const updated = db.prepare("SELECT * FROM work_entries WHERE id = ?").get(id);
+  const updated = (await db`SELECT * FROM work_entries WHERE id = ${id}`)[0];
   return NextResponse.json(updated);
 }
 
@@ -41,13 +41,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const { id } = await params;
   const { date, kind_of_work, description, price, work_status } = await req.json();
 
-  db.prepare(`
+  await db`
     UPDATE work_entries 
-    SET date=?, kind_of_work=?, description=?, price=?, work_status=?
-    WHERE id=? AND billing_status='unbilled'
-  `).run(date, kind_of_work, description ?? null, price, work_status, id);
+    SET date=${date}, kind_of_work=${kind_of_work}, description=${description ?? null}, price=${price}, work_status=${work_status}
+    WHERE id=${id} AND billing_status='unbilled'
+  `;
 
-  const entry = db.prepare("SELECT * FROM work_entries WHERE id = ?").get(id);
+  const entry = (await db`SELECT * FROM work_entries WHERE id = ${id}`)[0];
   return NextResponse.json(entry);
 }
 
@@ -56,12 +56,12 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
   const { id } = await params;
   // Only allow deleting unbilled entries
-  const entry = db.prepare("SELECT * FROM work_entries WHERE id = ?").get(id) as any;
+  const entry = (await db`SELECT * FROM work_entries WHERE id = ${id}`)[0];
   if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (entry.billing_status !== "unbilled") {
     return NextResponse.json({ error: "Cannot delete invoiced or paid entries" }, { status: 400 });
   }
 
-  db.prepare("DELETE FROM work_entries WHERE id = ?").run(id);
+  await db`DELETE FROM work_entries WHERE id = ${id}`;
   return NextResponse.json({ success: true });
 }
