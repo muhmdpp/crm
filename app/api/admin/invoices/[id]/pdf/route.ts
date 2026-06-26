@@ -28,14 +28,19 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const agencyName = process.env.AGENCY_NAME ?? "Deck Agency";
 
-  const stream = await renderToStream(
-    React.createElement(InvoiceDocument, { invoice: invoice as any, entries: entries as any, agencyName }) as any
-  );
+  try {
+    const stream = await renderToStream(
+      React.createElement(InvoiceDocument, { invoice: invoice as any, entries: entries as any, agencyName }) as any
+    );
 
-  return new NextResponse(stream as any, {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${invoice.invoice_number}.pdf"`,
-    },
-  });
+    return new NextResponse(stream as any, {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${invoice.invoice_number}.pdf"`,
+      },
+    });
+  } catch (error) {
+    console.error("PDF Render Error:", error);
+    return NextResponse.json({ error: "Failed to generate PDF", details: String(error) }, { status: 500 });
+  }
 }

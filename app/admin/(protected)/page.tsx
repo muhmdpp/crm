@@ -37,7 +37,7 @@ export default async function AdminDashboard() {
     recentInvoices,
     recentEntries
   ] = await Promise.all([
-    db`SELECT COALESCE(SUM(price), 0) as total FROM work_entries WHERE billing_status = 'unbilled'`,
+    db`SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE status = 'sent'`,
     db`SELECT COUNT(*) as count FROM work_entries WHERE billing_status = 'unbilled'`,
     db`
       SELECT COALESCE(SUM(total_amount), 0) as total 

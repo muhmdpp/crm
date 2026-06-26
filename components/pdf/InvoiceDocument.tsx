@@ -5,12 +5,32 @@ import {
   Text,
   View,
   StyleSheet,
+  Image,
   Font,
 } from "@react-pdf/renderer";
+import path from "path";
+import fs from "fs";
+
+// Register custom fonts for Rupee symbol support
+try {
+  const regularFont = fs.readFileSync(path.join(process.cwd(), "public", "pdf-assets", "Roboto-Regular.ttf"));
+  const boldFont = fs.readFileSync(path.join(process.cwd(), "public", "pdf-assets", "Roboto-Bold.ttf"));
+
+  Font.register({
+    family: "Roboto",
+    src: `data:font/truetype;charset=utf-8;base64,${regularFont.toString("base64")}`,
+  });
+  Font.register({
+    family: "Roboto-Bold",
+    src: `data:font/truetype;charset=utf-8;base64,${boldFont.toString("base64")}`,
+  });
+} catch (e) {
+  console.warn("Could not register Roboto font.", e);
+}
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: "Helvetica",
+    fontFamily: "Roboto",
     fontSize: 9,
     color: "#111827",
     padding: 48,
@@ -26,11 +46,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e5e7eb",
   },
-  agencyName: {
-    fontSize: 20,
-    fontFamily: "Helvetica-Bold",
-    color: "#111827",
-    letterSpacing: 0.5,
+  agencyLogo: {
+    width: 140, // Keeps aspect ratio by driving width
+    marginBottom: 4,
   },
   agencyTagline: {
     fontSize: 8,
@@ -39,7 +57,7 @@ const styles = StyleSheet.create({
   },
   invoiceLabel: {
     fontSize: 22,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto-Bold",
     color: "#4f46e5",
     textAlign: "right",
   },
@@ -60,7 +78,7 @@ const styles = StyleSheet.create({
   },
   metaLabel: {
     fontSize: 7,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto-Bold",
     color: "#9ca3af",
     textTransform: "uppercase",
     letterSpacing: 0.8,
@@ -73,7 +91,7 @@ const styles = StyleSheet.create({
   },
   metaValueBold: {
     fontSize: 10,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto-Bold",
     color: "#111827",
     marginBottom: 2,
   },
@@ -91,7 +109,7 @@ const styles = StyleSheet.create({
   },
   tableHeaderText: {
     fontSize: 7,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto-Bold",
     color: "#9ca3af",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -106,8 +124,8 @@ const styles = StyleSheet.create({
   tableRowAlt: {
     backgroundColor: "#fafafa",
   },
-  colDate: { width: "15%" },
-  colWork: { width: "25%" },
+  colNo: { width: "10%" },
+  colWork: { width: "30%" },
   colDesc: { width: "42%" },
   colPrice: { width: "18%", textAlign: "right" },
   cellText: {
@@ -117,7 +135,7 @@ const styles = StyleSheet.create({
   },
   cellBold: {
     fontSize: 9,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto-Bold",
     color: "#111827",
   },
   // Total
@@ -148,12 +166,12 @@ const styles = StyleSheet.create({
   },
   grandTotalLabel: {
     fontSize: 11,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto-Bold",
     color: "#111827",
   },
   grandTotalValue: {
     fontSize: 11,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto-Bold",
     color: "#4f46e5",
   },
   // Paid watermark
@@ -170,7 +188,7 @@ const styles = StyleSheet.create({
   },
   paidBadgeText: {
     fontSize: 22,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Roboto-Bold",
     color: "#16a34a",
     letterSpacing: 3,
     opacity: 0.6,
@@ -195,7 +213,6 @@ const styles = StyleSheet.create({
   thankYou: {
     fontSize: 8,
     color: "#6b7280",
-    fontStyle: "italic",
   },
 });
 
@@ -233,20 +250,26 @@ interface InvoiceDocumentProps {
     paid_at: string | null;
   };
   entries: WorkEntry[];
-  agencyName?: string;
 }
 
 export function InvoiceDocument({
   invoice,
   entries,
-  agencyName = "Deck Agency",
 }: InvoiceDocumentProps) {
   const isPaid = invoice.status === "paid";
+
+  // Read image as buffer to avoid 'fetch failed' on Windows absolute paths
+  let logoBuffer: Buffer | null = null;
+  try {
+    logoBuffer = fs.readFileSync(path.join(process.cwd(), "public", "logo.png"));
+  } catch (e) {
+    console.warn("Could not load logo.png", e);
+  }
 
   return (
     <Document
       title={`Invoice ${invoice.invoice_number}`}
-      author={agencyName}
+      author="Watermelon Branding"
     >
       <Page size="A4" style={styles.page}>
         {/* Paid watermark */}
@@ -259,8 +282,14 @@ export function InvoiceDocument({
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.agencyName}>{agencyName}</Text>
-            <Text style={styles.agencyTagline}>Creative Branding Agency</Text>
+            {logoBuffer && (
+              <Image 
+                src={{ data: logoBuffer, format: "png" }} 
+                style={styles.agencyLogo} 
+              />
+            )}
+            <Text style={styles.agencyTagline}>www.watermelonbranding.in</Text>
+            <Text style={styles.agencyTagline}>hello@watermelonbranding.in</Text>
           </View>
           <View>
             <Text style={styles.invoiceLabel}>INVOICE</Text>
@@ -302,7 +331,7 @@ export function InvoiceDocument({
         {/* Table */}
         <View style={styles.table}>
           <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderText, styles.colDate]}>Date</Text>
+            <Text style={[styles.tableHeaderText, styles.colNo]}>#</Text>
             <Text style={[styles.tableHeaderText, styles.colWork]}>Work</Text>
             <Text style={[styles.tableHeaderText, styles.colDesc]}>Description</Text>
             <Text style={[styles.tableHeaderText, styles.colPrice]}>Amount</Text>
@@ -312,8 +341,8 @@ export function InvoiceDocument({
               key={entry.id}
               style={[styles.tableRow, i % 2 === 1 ? styles.tableRowAlt : {}]}
             >
-              <Text style={[styles.cellText, styles.colDate]}>
-                {formatDate(entry.date)}
+              <Text style={[styles.cellText, styles.colNo]}>
+                {i + 1}
               </Text>
               <Text style={[styles.cellBold, styles.colWork]}>
                 {entry.kind_of_work}
@@ -344,7 +373,7 @@ export function InvoiceDocument({
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>{agencyName} · {invoice.invoice_number}</Text>
+          <Text style={styles.footerText}>Watermelon Branding · {invoice.invoice_number}</Text>
           <Text style={styles.thankYou}>Thank you for your business.</Text>
         </View>
       </Page>
