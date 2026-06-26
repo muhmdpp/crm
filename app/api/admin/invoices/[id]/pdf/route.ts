@@ -22,15 +22,14 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const entries = await db`
-    SELECT * FROM work_entries WHERE invoice_id = ${id} ORDER BY date ASC
-  `;
-
-  const agencyName = process.env.AGENCY_NAME ?? "Deck Agency";
+  const entries = await db.all(
+    `SELECT * FROM work_entries WHERE invoice_id = ? ORDER BY date ASC`,
+    [id]
+  );
 
   try {
     const stream = await renderToStream(
-      React.createElement(InvoiceDocument, { invoice: invoice as any, entries: entries as any, agencyName }) as any
+      React.createElement(InvoiceDocument, { invoice: invoice as any, entries: entries as any }) as any
     );
 
     return new NextResponse(stream as any, {
