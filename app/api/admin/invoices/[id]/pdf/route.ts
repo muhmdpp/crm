@@ -22,10 +22,9 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const entries = await db.all(
-    `SELECT * FROM work_entries WHERE invoice_id = ? ORDER BY date ASC`,
-    [id]
-  );
+  const entries = await db`
+    SELECT * FROM work_entries WHERE invoice_id = ${id} ORDER BY date ASC
+  `;
 
   try {
     const stream = await renderToStream(
