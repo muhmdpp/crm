@@ -59,32 +59,34 @@ export default async function InvoicesPage() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-50">
-                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Invoice</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Client</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide hidden sm:table-cell">Date</th>
-                <th className="px-5 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Amount</th>
-                <th className="px-5 py-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wide">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {invoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="px-5 py-4">
-                    <Link href={`/admin/invoices/${inv.id}`} className="text-sm font-medium text-gray-900 hover:text-indigo-600 transition-colors">
-                      {inv.invoice_number}
-                    </Link>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-gray-600">{inv.client_name}</td>
-                  <td className="px-5 py-4 text-sm text-gray-400 hidden sm:table-cell">{formatDate(inv.issue_date)}</td>
-                  <td className="px-5 py-4 text-right text-sm font-semibold text-gray-900">{formatCurrency(Number(inv.total_amount))}</td>
-                  <td className="px-5 py-4 text-center"><Badge status={inv.status} /></td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[500px]">
+              <thead>
+                <tr className="border-b border-gray-50">
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Invoice</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Client</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide hidden sm:table-cell">Date</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Amount</th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wide">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {invoices.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-5 py-4">
+                      <Link href={`/admin/invoices/${inv.id}`} className="text-sm font-medium text-gray-900 hover:text-indigo-600 transition-colors">
+                        {inv.invoice_number}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-gray-600">{inv.client_name}</td>
+                    <td className="px-5 py-4 text-sm text-gray-400 hidden sm:table-cell">{formatDate(inv.issue_date)}</td>
+                    <td className="px-5 py-4 text-right text-sm font-semibold text-gray-900">{formatCurrency(Number(inv.total_amount))}</td>
+                    <td className="px-5 py-4 text-center"><Badge status={inv.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

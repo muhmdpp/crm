@@ -575,31 +575,33 @@ export function ClientDetailClient({ client, workEntries: initialEntries, invoic
           <div className="px-5 py-4 border-b border-gray-50">
             <h2 className="text-sm font-semibold text-gray-900">Invoices</h2>
           </div>
-          <table className="w-full">
-            <tbody className="divide-y divide-gray-50">
-              {invoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-gray-50/40 transition-colors">
-                  <td className="px-5 py-3">
-                    <a href={`/admin/invoices/${inv.id}`} className="text-sm font-medium text-gray-900 hover:text-indigo-600">
-                      {inv.invoice_number}
-                    </a>
-                    <p className="text-xs text-gray-400">{formatDate(inv.issue_date)}</p>
-                  </td>
-                  <td className="px-5 py-3 text-right text-sm font-semibold text-gray-900">
-                    {formatCurrency(inv.total_amount)}
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    <StatusDropdown
-                      current={inv.status}
-                      options={INVOICE_STATUS_OPTIONS}
-                      onChange={(val) => handleUpdateInvoiceStatus(inv.id, val)}
-                      updating={updatingInvoice === inv.id}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[400px]">
+              <tbody className="divide-y divide-gray-50">
+                {invoices.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-gray-50/40 transition-colors">
+                    <td className="px-5 py-3">
+                      <a href={`/admin/invoices/${inv.id}`} className="text-sm font-medium text-gray-900 hover:text-indigo-600">
+                        {inv.invoice_number}
+                      </a>
+                      <p className="text-xs text-gray-400">{formatDate(inv.issue_date)}</p>
+                    </td>
+                    <td className="px-5 py-3 text-right text-sm font-semibold text-gray-900">
+                      {formatCurrency(inv.total_amount)}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <StatusDropdown
+                        current={inv.status}
+                        options={INVOICE_STATUS_OPTIONS}
+                        onChange={(val) => handleUpdateInvoiceStatus(inv.id, val)}
+                        updating={updatingInvoice === inv.id}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

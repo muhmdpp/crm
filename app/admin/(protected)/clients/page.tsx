@@ -62,53 +62,55 @@ export default async function ClientsPage() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-50">
-                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Client</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide hidden sm:table-cell">Contact</th>
-                <th className="px-5 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Unbilled</th>
-                <th className="px-5 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide hidden md:table-cell">Last Activity</th>
-                <th className="px-5 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {clients.map((client) => (
-                <tr key={client.id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="px-5 py-4">
-                    <Link href={`/admin/clients/${client.id}`} className="block">
-                      <p className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
-                        {client.name}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">Added {formatDate(client.created_at)}</p>
-                    </Link>
-                  </td>
-                  <td className="px-5 py-4 hidden sm:table-cell">
-                    <p className="text-sm text-gray-600">{client.email ?? "—"}</p>
-                    {client.phone && <p className="text-xs text-gray-400">{client.phone}</p>}
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(Number(client.unbilled_total))}</p>
-                    {Number(client.unbilled_count) > 0 && (
-                      <p className="text-xs text-amber-600">{client.unbilled_count} entr{Number(client.unbilled_count) !== 1 ? "ies" : "y"}</p>
-                    )}
-                  </td>
-                  <td className="px-5 py-4 text-right hidden md:table-cell">
-                    <p className="text-xs text-gray-400">
-                      {client.last_activity ? formatDate(client.last_activity) : "No entries"}
-                    </p>
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <Link href={`/admin/clients/${client.id}`}>
-                      <span className="text-xs text-indigo-600 hover:text-indigo-700 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                        View →
-                      </span>
-                    </Link>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
+              <thead>
+                <tr className="border-b border-gray-50">
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Client</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide hidden sm:table-cell">Contact</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Unbilled</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide hidden md:table-cell">Last Activity</th>
+                  <th className="px-5 py-3" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {clients.map((client) => (
+                  <tr key={client.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-5 py-4">
+                      <Link href={`/admin/clients/${client.id}`} className="block">
+                        <p className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+                          {client.name}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">Added {formatDate(client.created_at)}</p>
+                      </Link>
+                    </td>
+                    <td className="px-5 py-4 hidden sm:table-cell">
+                      <p className="text-sm text-gray-600">{client.email ?? "—"}</p>
+                      {client.phone && <p className="text-xs text-gray-400">{client.phone}</p>}
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <p className="text-sm font-semibold text-gray-900">{formatCurrency(Number(client.unbilled_total))}</p>
+                      {Number(client.unbilled_count) > 0 && (
+                        <p className="text-xs text-amber-600">{client.unbilled_count} entr{Number(client.unbilled_count) !== 1 ? "ies" : "y"}</p>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-right hidden md:table-cell">
+                      <p className="text-xs text-gray-400">
+                        {client.last_activity ? formatDate(client.last_activity) : "No entries"}
+                      </p>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <Link href={`/admin/clients/${client.id}`}>
+                        <span className="text-xs text-indigo-600 hover:text-indigo-700 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                          View →
+                        </span>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

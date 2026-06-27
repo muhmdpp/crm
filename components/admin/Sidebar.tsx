@@ -156,22 +156,39 @@ export function Sidebar() {
           </div>
           <span className="text-sm font-semibold">Watermelon CRM</span>
         </div>
-        <button onClick={() => setMobileOpen(true)} className="p-1.5 rounded-lg hover:bg-gray-100">
-          <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        <button onClick={handleLogout} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100" title="Sign out">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
         </button>
       </div>
 
-      {/* Mobile drawer */}
-      {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-40">
-          <div className="absolute inset-0 bg-black/20" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-xl">
-            <NavContent />
-          </aside>
+      {/* Mobile bottom navigator */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 pb-[env(safe-area-inset-bottom)]">
+        <div className="flex items-center justify-around px-2 py-2">
+          {baseNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`
+                flex flex-col items-center justify-center gap-1 w-full py-1 rounded-lg
+                transition-colors
+                ${isActive(item) ? "text-indigo-600" : "text-gray-400 hover:text-gray-600"}
+              `}
+            >
+              <div className="relative">
+                {item.icon}
+                {item.label === "Notifications" && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white border border-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium">{item.label}</span>
+            </Link>
+          ))}
         </div>
-      )}
+      </nav>
     </>
   );
 }
