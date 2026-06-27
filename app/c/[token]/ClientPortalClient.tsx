@@ -467,7 +467,7 @@ export function ClientPortalClient({
               {clientName && <p className="text-xs text-gray-400 leading-tight">{clientName}</p>}
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={handleSignOut} loading={signingOut}>
+          <Button variant="secondary" size="sm" onClick={handleSignOut} loading={signingOut}>
             Sign Out
           </Button>
         </div>
