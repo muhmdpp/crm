@@ -20,3 +20,11 @@ export async function verifyClientToken(token: string): Promise<void> {
     await session.save();
   }
 }
+
+export async function logoutClientToken(token: string): Promise<void> {
+  const session = await getClientSession();
+  if (session.verifiedTokens) {
+    session.verifiedTokens = session.verifiedTokens.filter(t => t !== token);
+    await session.save();
+  }
+}

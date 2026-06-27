@@ -94,46 +94,141 @@ function InvoiceSkeletons() {
 
 // ─── Tab Content ──────────────────────────────────────────────────────────────
 
-function WorkHistoryTab({ entries, loading }: { entries: WorkEntry[]; loading: boolean }) {
-  if (loading) return <WorkHistorySkeletons />;
+function WorkHistoryTab({ entries, loading, token, onWorkAdded }: { entries: WorkEntry[]; loading: boolean; token: string; onWorkAdded: () => void }) {
+  const [showForm, setShowForm] = useState(false);
+  const [kindOfWork, setKindOfWork] = useState("");
+  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  if (entries.length === 0) {
-    return (
-      <div className="text-center py-16">
-        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-        </div>
-        <p className="text-sm font-medium text-gray-600">No work entries yet</p>
-        <p className="text-xs text-gray-400 mt-1">Work will appear here once logged</p>
-      </div>
-    );
+  async function handleAddWork(e: React.FormEvent) {
+    e.preventDefault();
+    if (!kindOfWork.trim()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/client/${token}/work`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind_of_work: kindOfWork, description }),
+      });
+      if (res.ok) {
+        setShowForm(false);
+        setKindOfWork("");
+        setDescription("");
+        onWorkAdded();
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
-    <div className="space-y-3">
-      {entries.map((entry) => (
-        <div key={entry.id} className="bg-white rounded-xl border border-gray-100 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-gray-900 leading-snug">{entry.kind_of_work}</p>
-              {entry.description && (
-                <p className="text-xs text-gray-400 mt-1 leading-relaxed">{entry.description}</p>
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={() => setShowForm(!showForm)} size="sm">
+          {showForm ? "Cancel" : "Request Work"}
+        </Button>
+      </div>
+      
+      {showForm && (
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Request New Work</h3>
+          <form onSubmit={handleAddWork} className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Title / Kind of Work</label>
+              <select
+                value={kindOfWork === "Logo Design" || kindOfWork === "Poster Design" || kindOfWork === "Web Design" || kindOfWork === "Brochure Design" || kindOfWork === "" ? kindOfWork : "Other"}
+                onChange={(e) => {
+                  if (e.target.value !== "Other") setKindOfWork(e.target.value);
+                  else setKindOfWork("Custom"); // Just a placeholder to trigger the custom input
+                }}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 mb-2 bg-white"
+                required
+              >
+                <option value="" disabled>Select a kind of work</option>
+                <option value="Logo Design">Logo Design</option>
+                <option value="Poster Design">Poster Design</option>
+                <option value="Web Design">Web Design</option>
+                <option value="Brochure Design">Brochure Design</option>
+                <option value="Other">Other (Specify)</option>
+              </select>
+              
+              {kindOfWork !== "" && kindOfWork !== "Logo Design" && kindOfWork !== "Poster Design" && kindOfWork !== "Web Design" && kindOfWork !== "Brochure Design" && (
+                <input
+                  type="text"
+                  value={kindOfWork === "Custom" ? "" : kindOfWork}
+                  onChange={(e) => setKindOfWork(e.target.value)}
+                  placeholder="Enter custom work type"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  required
+                />
               )}
-              <p className="text-xs text-gray-400 mt-2">{formatDate(entry.date)}</p>
             </div>
-            <div className="shrink-0 flex flex-col items-end gap-2">
-              <p className="text-sm font-bold text-gray-900">{formatCurrency(entry.price)}</p>
-              <Badge
-                status={entry.billing_status}
-                label={entry.status_label}
-                size="sm"
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Description (Optional)</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Provide some details..."
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 min-h-[80px]"
               />
             </div>
-          </div>
+            <div className="flex justify-end">
+              <Button type="submit" loading={submitting} size="sm">
+                Submit Request
+              </Button>
+            </div>
+          </form>
         </div>
-      ))}
+      )}
+
+      {loading ? (
+        <WorkHistorySkeletons />
+      ) : entries.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-gray-600">No work entries yet</p>
+          <p className="text-xs text-gray-400 mt-1">Work will appear here once logged</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {entries.map((entry) => (
+            <div key={entry.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-gray-900 leading-snug">{entry.kind_of_work}</p>
+                  {entry.description && (
+                    <p className="text-xs text-gray-400 mt-1 leading-relaxed">{entry.description}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-gray-400">{formatDate(entry.date)}</span>
+                    <Badge
+                      status={entry.work_status}
+                      label={
+                        entry.work_status === "to_do" ? "To-Do" :
+                        entry.work_status === "in_progress" ? "In Progress" :
+                        "Completed"
+                      }
+                      size="sm"
+                    />
+                  </div>
+                </div>
+                <div className="shrink-0 flex flex-col items-end gap-2">
+                  <p className="text-sm font-bold text-gray-900">{formatCurrency(entry.price)}</p>
+                  <Badge
+                    status={entry.billing_status}
+                    label={entry.status_label}
+                    size="sm"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -193,7 +288,7 @@ function InvoicesTab({ invoices, token, loading }: { invoices: Invoice[]; token:
 
 // ─── PIN Entry Screen ─────────────────────────────────────────────────────────
 
-function PinEntry({ token, onSuccess }: { token: string; onSuccess: (name: string) => void }) {
+function PinEntry({ token, clientName, onSuccess }: { token: string; clientName: string; onSuccess: (name: string) => void }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -230,7 +325,7 @@ function PinEntry({ token, onSuccess }: { token: string; onSuccess: (name: strin
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Watermelon CRM</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{clientName}</h1>
           <p className="text-sm text-gray-400 mt-2">Enter your PIN to view your workspace</p>
         </div>
 
@@ -292,6 +387,17 @@ export function ClientPortalClient({
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [workLoading, setWorkLoading] = useState(false);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await fetch(`/api/client/${token}/logout`, { method: "POST" });
+      setVerified(false);
+    } finally {
+      setSigningOut(false);
+    }
+  }
 
   // Always fetch fresh data — never use stale cache
   const fetchWork = useCallback(async () => {
@@ -342,7 +448,7 @@ export function ClientPortalClient({
   }
 
   if (!verified) {
-    return <PinEntry token={token} onSuccess={handleVerified} />;
+    return <PinEntry token={token} clientName={clientName} onSuccess={handleVerified} />;
   }
 
   return (
@@ -361,6 +467,9 @@ export function ClientPortalClient({
               {clientName && <p className="text-xs text-gray-400 leading-tight">{clientName}</p>}
             </div>
           </div>
+          <Button variant="outline" size="sm" onClick={handleSignOut} loading={signingOut}>
+            Sign Out
+          </Button>
         </div>
 
         {/* Tabs */}
@@ -384,7 +493,7 @@ export function ClientPortalClient({
       {/* Content */}
       <main className="max-w-lg mx-auto px-4 py-6">
         {activeTab === "work" ? (
-          <WorkHistoryTab entries={workEntries} loading={workLoading} />
+          <WorkHistoryTab entries={workEntries} loading={workLoading} token={token} onWorkAdded={fetchWork} />
         ) : (
           <InvoicesTab invoices={invoices} token={token} loading={invoicesLoading} />
         )}

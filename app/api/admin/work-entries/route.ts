@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
     const result = await db`
       INSERT INTO work_entries (client_id, date, kind_of_work, description, price, work_status)
-      VALUES (${client_id}, ${date}, ${kind_of_work}, ${description ?? null}, ${price}, ${work_status ?? "in_progress"})
+      VALUES (${client_id}, ${date}, ${kind_of_work}, ${description ?? null}, ${price}, ${work_status ?? "to_do"})
       RETURNING *
     `;
 

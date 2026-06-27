@@ -11,7 +11,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const { id } = await params;
   const body = await req.json();
 
-  const validWorkStatus = ["in_progress", "completed"];
+  const validWorkStatus = ["to_do", "in_progress", "completed"];
   const validBillingStatus = ["unbilled", "invoiced", "paid"];
 
   if (body.work_status !== undefined && !validWorkStatus.includes(body.work_status)) {

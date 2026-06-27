@@ -2,6 +2,7 @@
 
 type BadgeVariant =
   | "unbilled"
+  | "to_do"
   | "in_progress"
   | "completed"
   | "invoiced"
@@ -12,6 +13,7 @@ type BadgeVariant =
 
 const variantStyles: Record<BadgeVariant, string> = {
   unbilled: "bg-gray-100 text-gray-600",
+  to_do: "bg-slate-50 text-slate-700",
   in_progress: "bg-amber-50 text-amber-700",
   completed: "bg-emerald-50 text-emerald-700",
   invoiced: "bg-blue-50 text-blue-700",
@@ -23,6 +25,7 @@ const variantStyles: Record<BadgeVariant, string> = {
 
 const variantLabels: Record<string, string> = {
   unbilled: "Unbilled",
+  to_do: "To-Do",
   in_progress: "In Progress",
   completed: "Completed",
   invoiced: "Invoiced",
@@ -52,6 +55,8 @@ export function Badge({ status, label, size = "md" }: BadgeProps) {
             ? "bg-green-500"
             : variant === "in_progress"
             ? "bg-amber-500"
+            : variant === "to_do"
+            ? "bg-slate-400"
             : variant === "invoiced" || variant === "sent"
             ? "bg-blue-500"
             : "bg-gray-400"

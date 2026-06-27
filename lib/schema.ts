@@ -37,7 +37,7 @@ export async function initDB() {
         kind_of_work TEXT NOT NULL,
         description TEXT,
         price REAL NOT NULL DEFAULT 0,
-        work_status TEXT NOT NULL DEFAULT 'in_progress' CHECK(work_status IN ('in_progress','completed')),
+        work_status TEXT NOT NULL DEFAULT 'to_do' CHECK(work_status IN ('to_do','in_progress','completed')),
         billing_status TEXT NOT NULL DEFAULT 'unbilled' CHECK(billing_status IN ('unbilled','invoiced','paid')),
         invoice_id INTEGER REFERENCES invoices(id) ON DELETE SET NULL,
         created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
@@ -47,6 +47,16 @@ export async function initDB() {
     await db`CREATE INDEX IF NOT EXISTS idx_work_entries_client ON work_entries(client_id);`;
     await db`CREATE INDEX IF NOT EXISTS idx_work_entries_invoice ON work_entries(invoice_id);`;
     await db`CREATE INDEX IF NOT EXISTS idx_invoices_client ON invoices(client_id);`;
+    await db`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        client_id INTEGER REFERENCES clients(id) ON DELETE CASCADE,
+        work_entry_id INTEGER REFERENCES work_entries(id) ON DELETE CASCADE,
+        message TEXT NOT NULL,
+        is_read BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+      );
+    `;
   } catch (err) {
     console.error("Failed to initialize database schema:", err);
   }

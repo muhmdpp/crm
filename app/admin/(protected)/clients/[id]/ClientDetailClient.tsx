@@ -104,6 +104,7 @@ function StatusDropdown({
               className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${opt.value === current ? "font-semibold text-indigo-600" : "text-gray-700"}`}
             >
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                opt.value === "to_do" ? "bg-slate-400" :
                 opt.value === "in_progress" ? "bg-amber-400" :
                 opt.value === "completed" ? "bg-emerald-400" :
                 opt.value === "unbilled" ? "bg-gray-400" :
@@ -127,6 +128,7 @@ function StatusDropdown({
 }
 
 const WORK_STATUS_OPTIONS: StatusOption[] = [
+  { value: "to_do", label: "To-Do" },
   { value: "in_progress", label: "In Progress" },
   { value: "completed", label: "Completed" },
 ];
@@ -158,12 +160,14 @@ export function ClientDetailClient({ client, workEntries: initialEntries, invoic
   const [updatingEntry, setUpdatingEntry] = useState<number | null>(null);
   const [updatingInvoice, setUpdatingInvoice] = useState<number | null>(null);
 
+  const [editEntryId, setEditEntryId] = useState<number | null>(null);
+
   const [entryForm, setEntryForm] = useState({
     date: new Date().toISOString().split("T")[0],
     kind_of_work: "",
     description: "",
     price: "",
-    work_status: "in_progress",
+    work_status: "to_do",
   });
 
   function toggleSelect(id: number) {
@@ -197,7 +201,7 @@ export function ClientDetailClient({ client, workEntries: initialEntries, invoic
       if (!res.ok) { const d = await res.json(); setAddError(d.error); return; }
       const newEntry = await res.json();
       setEntries((prev) => [newEntry, ...prev]);
-      setEntryForm({ date: new Date().toISOString().split("T")[0], kind_of_work: "", description: "", price: "", work_status: "in_progress" });
+      setEntryForm({ date: new Date().toISOString().split("T")[0], kind_of_work: "", description: "", price: "", work_status: "to_do" });
       setShowAddForm(false);
     } finally {
       setAddLoading(false);
@@ -209,6 +213,37 @@ export function ClientDetailClient({ client, workEntries: initialEntries, invoic
     await fetch(`/api/admin/work-entries/${id}`, { method: "DELETE" });
     setEntries((prev) => prev.filter((e) => e.id !== id));
     setSelected((prev) => { const next = new Set(prev); next.delete(id); return next; });
+  }
+
+  async function handleEditEntry(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editEntryId || !entryForm.kind_of_work || !entryForm.price) return;
+    setAddLoading(true);
+    try {
+      const res = await fetch(`/api/admin/work-entries/${editEntryId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...entryForm, price: parseFloat(entryForm.price) }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setEntries((prev) => prev.map((ent) => (ent.id === editEntryId ? updated : ent)));
+        setEditEntryId(null);
+      }
+    } finally {
+      setAddLoading(false);
+    }
+  }
+
+  function openEditModal(entry: WorkEntry) {
+    setEntryForm({
+      date: entry.date,
+      kind_of_work: entry.kind_of_work,
+      description: entry.description || "",
+      price: entry.price.toString(),
+      work_status: entry.work_status,
+    });
+    setEditEntryId(entry.id);
   }
 
   async function handleUpdateEntryStatus(id: number, patch: { work_status?: string; billing_status?: string }) {
@@ -369,13 +404,34 @@ export function ClientDetailClient({ client, workEntries: initialEntries, invoic
                 required
               />
             </div>
-            <Input
-              label="Kind of Work"
-              value={entryForm.kind_of_work}
-              onChange={(e) => setEntryForm((p) => ({ ...p, kind_of_work: e.target.value }))}
-              placeholder="Brand Identity, Website Design…"
-              required
-            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-gray-700">Kind of Work<span className="ml-1 text-red-500">*</span></label>
+              <select
+                value={entryForm.kind_of_work === "Logo Design" || entryForm.kind_of_work === "Poster Design" || entryForm.kind_of_work === "Web Design" || entryForm.kind_of_work === "Brochure Design" || entryForm.kind_of_work === "" ? entryForm.kind_of_work : "Other"}
+                onChange={(e) => {
+                  if (e.target.value !== "Other") setEntryForm((p) => ({ ...p, kind_of_work: e.target.value }));
+                  else setEntryForm((p) => ({ ...p, kind_of_work: "Custom" }));
+                }}
+                className="w-full rounded-lg border px-3.5 py-2.5 text-sm text-gray-900 bg-white border-gray-200 hover:border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-1"
+                required
+              >
+                <option value="" disabled>Select a kind of work</option>
+                <option value="Logo Design">Logo Design</option>
+                <option value="Poster Design">Poster Design</option>
+                <option value="Web Design">Web Design</option>
+                <option value="Brochure Design">Brochure Design</option>
+                <option value="Other">Other (Specify)</option>
+              </select>
+              
+              {entryForm.kind_of_work !== "" && entryForm.kind_of_work !== "Logo Design" && entryForm.kind_of_work !== "Poster Design" && entryForm.kind_of_work !== "Web Design" && entryForm.kind_of_work !== "Brochure Design" && (
+                <Input
+                  value={entryForm.kind_of_work === "Custom" ? "" : entryForm.kind_of_work}
+                  onChange={(e) => setEntryForm((p) => ({ ...p, kind_of_work: e.target.value }))}
+                  placeholder="Enter custom work type"
+                  required
+                />
+              )}
+            </div>
             <Textarea
               label="Description"
               value={entryForm.description}
@@ -387,6 +443,7 @@ export function ClientDetailClient({ client, workEntries: initialEntries, invoic
               value={entryForm.work_status}
               onChange={(e) => setEntryForm((p) => ({ ...p, work_status: e.target.value }))}
               options={[
+                { value: "to_do", label: "To-Do" },
                 { value: "in_progress", label: "In Progress" },
                 { value: "completed", label: "Completed" },
               ]}
@@ -480,17 +537,28 @@ export function ClientDetailClient({ client, workEntries: initialEntries, invoic
                         />
                       </td>
                       <td className="px-4 py-3">
-                        {isSelectable && (
+                        <div className="flex items-center gap-1 justify-end">
                           <button
-                            onClick={() => handleDeleteEntry(entry.id)}
-                            className="p-1 text-gray-300 hover:text-red-400 transition-colors rounded"
-                            title="Delete entry"
+                            onClick={() => openEditModal(entry)}
+                            className="p-1 text-gray-400 hover:text-indigo-600 transition-colors rounded"
+                            title="Edit entry"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                             </svg>
                           </button>
-                        )}
+                          {isSelectable && (
+                            <button
+                              onClick={() => handleDeleteEntry(entry.id)}
+                              className="p-1 text-gray-400 hover:text-red-500 transition-colors rounded"
+                              title="Delete entry"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -535,7 +603,6 @@ export function ClientDetailClient({ client, workEntries: initialEntries, invoic
         </div>
       )}
 
-      {/* Invoice confirmation modal */}
       <Modal open={showInvoiceModal} onClose={() => setShowInvoiceModal(false)} title="Generate Invoice">
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
@@ -557,6 +624,77 @@ export function ClientDetailClient({ client, workEntries: initialEntries, invoic
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Edit Entry Modal */}
+      <Modal open={editEntryId !== null} onClose={() => setEditEntryId(null)} title="Edit Work Entry">
+        <form onSubmit={handleEditEntry} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Date"
+              type="date"
+              value={entryForm.date}
+              onChange={(e) => setEntryForm((p) => ({ ...p, date: e.target.value }))}
+              required
+            />
+            <Input
+              label="Price (₹)"
+              type="number"
+              min="0"
+              step="0.01"
+              value={entryForm.price}
+              onChange={(e) => setEntryForm((p) => ({ ...p, price: e.target.value }))}
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700">Kind of Work<span className="ml-1 text-red-500">*</span></label>
+            <select
+              value={entryForm.kind_of_work === "Logo Design" || entryForm.kind_of_work === "Poster Design" || entryForm.kind_of_work === "Web Design" || entryForm.kind_of_work === "Brochure Design" || entryForm.kind_of_work === "" ? entryForm.kind_of_work : "Other"}
+              onChange={(e) => {
+                if (e.target.value !== "Other") setEntryForm((p) => ({ ...p, kind_of_work: e.target.value }));
+                else setEntryForm((p) => ({ ...p, kind_of_work: "Custom" }));
+              }}
+              className="w-full rounded-lg border px-3.5 py-2.5 text-sm text-gray-900 bg-white border-gray-200 hover:border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-1"
+              required
+            >
+              <option value="" disabled>Select a kind of work</option>
+              <option value="Logo Design">Logo Design</option>
+              <option value="Poster Design">Poster Design</option>
+              <option value="Web Design">Web Design</option>
+              <option value="Brochure Design">Brochure Design</option>
+              <option value="Other">Other (Specify)</option>
+            </select>
+            
+            {entryForm.kind_of_work !== "" && entryForm.kind_of_work !== "Logo Design" && entryForm.kind_of_work !== "Poster Design" && entryForm.kind_of_work !== "Web Design" && entryForm.kind_of_work !== "Brochure Design" && (
+              <Input
+                value={entryForm.kind_of_work === "Custom" ? "" : entryForm.kind_of_work}
+                onChange={(e) => setEntryForm((p) => ({ ...p, kind_of_work: e.target.value }))}
+                placeholder="Enter custom work type"
+                required
+              />
+            )}
+          </div>
+          <Textarea
+            label="Description"
+            value={entryForm.description}
+            onChange={(e) => setEntryForm((p) => ({ ...p, description: e.target.value }))}
+          />
+          <Select
+            label="Work Status"
+            value={entryForm.work_status}
+            onChange={(e) => setEntryForm((p) => ({ ...p, work_status: e.target.value }))}
+            options={[
+              { value: "to_do", label: "To-Do" },
+              { value: "in_progress", label: "In Progress" },
+              { value: "completed", label: "Completed" },
+            ]}
+          />
+          <div className="flex gap-2 justify-end pt-2">
+            <Button type="button" variant="ghost" onClick={() => setEditEntryId(null)}>Cancel</Button>
+            <Button type="submit" loading={addLoading}>Save Changes</Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

@@ -27,7 +27,7 @@ export default async function ClientPortalPage({ params }: Props) {
     <ClientPortalClient
       token={token}
       initialVerified={verified}
-      initialClientName={verified ? (client.name as string) : null}
+      initialClientName={client.name as string}
     />
   );
 }
