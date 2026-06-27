@@ -1,5 +1,5 @@
 // Deck Service Worker — App Shell Caching
-const CACHE_NAME = "deck-v1";
+const CACHE_NAME = "deck-v2";
 
 const APP_SHELL = [
   "/",
